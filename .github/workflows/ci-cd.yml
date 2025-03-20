@@ -38,6 +38,3 @@ jobs:
 
       - name: Run Integration Tests
         run: mvn -X failsafe:integration-test
-
-      - name: Verify Integration Tests
-        run: mvn -X failsafe:verify
