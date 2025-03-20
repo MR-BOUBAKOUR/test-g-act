@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link crossorigin="anonymous" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" rel="stylesheet">
+    <title>Pay My Buddy - Virements</title>
+    <style>
+        .bg-danger-transparent {
+            background-color: rgba(255, 99, 105, 0.05) !important;
+        }
+
+        .bg-success-transparent {
+            background-color: rgba(102, 205, 102, 0.05) !important;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom border-primary mb-4">
+    <div class="container">
+        <a class="navbar-brand btn btn-warning" href="/dashboard">Pay My Buddy</a>
+        <div class="navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="/dashboard">Accueil</a></li>
+                <li class="nav-item"><a class="nav-link" href="/accounts">Comptes</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contacts">Bénéficiaires</a></li>
+                <li class="nav-item active"><a class="nav-link" href="/transactions">Virements</a></li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item mr-3 d-flex align-items-center"><a href="/profile" class="text-primary" th:text="${user.email}"></a></li>
+                <li class="nav-item">
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="btn btn-outline-primary">Se déconnecter</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="card p-4 border border-primary mb-4">
+        <div th:if="${transactions != null and !transactions.isEmpty()}" class="mb-4">
+            <h2 class="mb-4">Mes Virements</h2>
+
+            <div th:if="${successMessage}" class="alert alert-success mb-3" role="alert">
+                <span th:text="${successMessage}"></span>
+            </div>
+
+            <table class="table table-bordered">
+                <thead class="bg-primary text-white">
+                <tr class="text-center">
+                    <th>ID</th>
+                    <th>Émetteur</th>
+                    <th>Récepteur</th>
+                    <th>Montant</th>
+                    <th>Description</th>
+                    <th>Date</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="transaction : ${transactions}"
+                    th:class="${transaction.getRowStyleClass(user.id)}">
+                    <td class="border-primary" th:text="${transaction.id}"></td>
+                    <td class="border-primary">
+                        <strong th:text="${transaction.senderUsername}"></strong>
+                        <span th:text="' - ' + ${transaction.senderAccountName}"></span>
+                    </td>
+                    <td class="border-primary">
+                        <strong th:text="${transaction.receiverUsername}"></strong>
+                        <span th:text="' - ' + ${transaction.receiverAccountName}"></span>
+                    </td>
+                    <td th:text="${transaction.amount}" class="border-primary"></td>
+                    <td th:text="${transaction.description}" class="border-primary"></td>
+                    <td th:text="${transaction.getFormattedCreatedAt()}" class="border-primary"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="mb-3">Effectuer un Virement</h2>
+        <form th:action="@{/createTransaction}" th:object="${transactionCreate}" method="post">
+            <div class="row">
+                <div class="form-group col-md-4">
+                    <select id="senderAccountId" class="form-control" th:field="*{senderAccountId}" required>
+                        <option value="" selected>Sélectionnez un compte émetteur</option>
+                        <option th:each="account : ${user.accounts}" th:value="${account.id}"
+                                th:text="${account.name} + ' (solde actuel : ' + ${account.balance} + ')'">
+                        </option>">
+                    </select>
+                    <small th:if="${errorMessage2}" th:text="${errorMessage2}" class="text-danger"></small>
+                </div>
+
+                <div class="form-group col-md-4">
+                    <select id="receiverAccountId" class="form-control" th:field="*{receiverAccountId}" required>
+                        <option value="" selected>Sélectionnez un compte récepteur</option>
+                        <!-- Boucle sur les récepteurs -->
+                        <th:block th:each="receiver : ${receiversAccounts}">
+                            <!-- Boucle sur les comptes de chaque récepteur -->
+                            <option th:each="account : ${receiver.accounts}" th:value="${account.id}"
+                                    th:text="${receiver.ownerName == user.username ? '--- ' + receiver.ownerName : receiver.ownerName} + ' - ' + ${account.name}">
+                            </option>
+                        </th:block>
+
+                    </select>
+                </div>
+
+
+                <div class="form-group col-md-4">
+                    <div class="input-group">
+                        <input type="number" step="0.01" id="amount" class="form-control" th:field="*{amount}" placeholder="Montant (Ex : 5.00)" required>
+                        <div class="input-group-append"><span class="input-group-text">€</span></div>
+                    </div>
+                    <small class="text-danger" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}"></small>
+                    <small th:if="${errorMessage1}" th:text="${errorMessage1}" class="text-danger"></small>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group col-md-10">
+                    <textarea id="description" class="form-control" style="height: 100px;" th:field="*{description}" placeholder="Ajouter une description (optionnel)"></textarea>
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-success w-100" style="height: 100px;">Envoyer</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+</body>
+</html>
