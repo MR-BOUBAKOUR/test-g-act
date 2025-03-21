@@ -17,7 +17,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: paymybuddy_test
         ports:
-          - 3307:3307
+          - 3306:3306
         options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
 
     steps:
@@ -37,4 +37,4 @@ jobs:
         run: mvn test
 
       - name: Run Integration Tests
-        run: mvn -X failsafe:integration-test
+        run: mvn failsafe:integration-test

@@ -5,8 +5,7 @@ WORKDIR /app
 COPY pom.xml .
 COPY src ./src
 
-RUN apt-get update && apt-get install -y maven
-RUN mvn package -DskipTests
+RUN ./mvnw package -DskipTests
 
 FROM eclipse-temurin:21-jre
 
