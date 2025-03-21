@@ -48,7 +48,7 @@ jobs:
           name: jacoco-report
           path: target/site/jacoco/
 
-      - name: Deploy JaCoCo report to GitHub Pages
+      - name: Deploying JaCoCo report to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
