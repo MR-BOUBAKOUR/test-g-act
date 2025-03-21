@@ -42,14 +42,23 @@ jobs:
       - name: Generate JaCoCo Coverage Report
         run: mvn jacoco:report
 
+      - name: Generate JavaDocs
+        run: mvn javadoc:javadoc
+
       - name: Upload JaCoCo Coverage Report
         uses: actions/upload-artifact@v4
         with:
           name: jacoco-report
           path: target/site/jacoco/
 
-      - name: Deploying JaCoCo report to GitHub Pages
+      - name: Upload JavaDocs
+        uses: actions/upload-artifact@v4
+        with:
+          name: javadocs
+          path: target/site/apidocs/
+
+      - name: Deploying reports to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: target/site/jacoco
+          publish_dir: target/site
