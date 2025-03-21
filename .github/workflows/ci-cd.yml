@@ -42,17 +42,14 @@ jobs:
       - name: Generate JaCoCo Coverage Report
         run: mvn jacoco:report
 
-      - name: Copy JaCoCo Report to docs folder
-        run: |
-          mkdir -p docs/jacoco
-          cp -r target/site/jacoco/* docs/jacoco/
+      - name: Upload JaCoCo Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
 
-      - name: Commit and push updated docs to GitHub Pages
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@users.noreply.github.com"
-          git add docs/
-          git commit -m "Update JaCoCo report"
-          git push origin HEAD:gh-pages
-        env:
+      - name: Deploy JaCoCo report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: target/site/jacoco
