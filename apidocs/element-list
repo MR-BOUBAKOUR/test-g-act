@@ -1,0 +1,13 @@
+com.payMyBuddy
+com.payMyBuddy.aspect
+com.payMyBuddy.config
+com.payMyBuddy.controller
+com.payMyBuddy.dto.account
+com.payMyBuddy.dto.transaction
+com.payMyBuddy.dto.user
+com.payMyBuddy.exception
+com.payMyBuddy.mapper
+com.payMyBuddy.model
+com.payMyBuddy.repository
+com.payMyBuddy.security
+com.payMyBuddy.service
