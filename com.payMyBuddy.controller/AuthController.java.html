@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AuthController.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.payMyBuddy.controller</a> &gt; <span class="el_source">AuthController.java</span></div><h1>AuthController.java</h1><pre class="source lang-java linenums">package com.payMyBuddy.controller;
+
+import com.payMyBuddy.dto.user.UserCreateDTO;
+import com.payMyBuddy.dto.user.UserLoginDTO;
+import com.payMyBuddy.exception.EmailAlreadyExistException;
+import com.payMyBuddy.security.SecurityUtils;
+import com.payMyBuddy.service.UserService;
+
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+/**
+ * The type Auth controller.
+ */
+@Controller
+public class AuthController {
+
+    private final UserService userService;
+    private final SecurityUtils securityUtils;
+
+    /**
+     * Instantiates a new Auth controller.
+     *
+     * @param userService   the user service
+     * @param securityUtils the security utils
+     */
+    @Autowired
+<span class="fc" id="L35">    public AuthController(UserService userService, SecurityUtils securityUtils) {</span>
+<span class="fc" id="L36">        this.userService = userService;</span>
+<span class="fc" id="L37">        this.securityUtils = securityUtils;</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Show login form.
+     *
+     * @param model the model
+     * @return the string
+     */
+    @GetMapping(&quot;/login&quot;)
+    public String showLoginForm(Model model) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (securityUtils.getCurrentUserId() != null) {</span>
+<span class="fc" id="L49">            return &quot;redirect:/dashboard&quot;;</span>
+        }
+
+<span class="fc" id="L52">        model.addAttribute(&quot;user&quot;, new UserLoginDTO());</span>
+<span class="fc" id="L53">        return &quot;login-form&quot;;</span>
+    }
+
+    /**
+     * Show signup form.
+     *
+     * @param model the model
+     * @return the string
+     */
+    @GetMapping(&quot;/signup&quot;)
+    public String showSignupForm(Model model) {
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (securityUtils.getCurrentUserId() != null) {</span>
+<span class="fc" id="L65">            return &quot;redirect:/dashboard&quot;;</span>
+        }
+
+<span class="fc" id="L68">        model.addAttribute(&quot;user&quot;, new UserCreateDTO());</span>
+<span class="fc" id="L69">        return &quot;signup-form&quot;;</span>
+    }
+
+    /**
+     * Process signup.
+     *
+     * @param model              the model
+     * @param userCreateDTO      the user create dto
+     * @param bindingResult      the binding result
+     * @param redirectAttributes the redirect attributes
+     * @return the string
+     */
+    @PostMapping(&quot;/processSignup&quot;)
+    public String processSignup(
+            Model model,
+            @Valid @ModelAttribute(&quot;user&quot;) UserCreateDTO userCreateDTO,
+            BindingResult bindingResult,
+            RedirectAttributes redirectAttributes
+    ) {
+<span class="fc bfc" id="L88" title="All 2 branches covered.">        if (securityUtils.getCurrentUserId() != null) {</span>
+<span class="fc" id="L89">            return &quot;redirect:/dashboard&quot;;</span>
+        }
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        if (bindingResult.hasErrors()) {</span>
+<span class="fc" id="L92">            model.addAttribute(&quot;user&quot;, userCreateDTO);</span>
+<span class="fc" id="L93">            return &quot;signup-form&quot;;</span>
+        }
+
+        try {
+<span class="fc" id="L97">            userService.createUser(userCreateDTO);</span>
+<span class="fc" id="L98">        } catch (EmailAlreadyExistException e) {</span>
+<span class="fc" id="L99">            bindingResult.rejectValue(</span>
+<span class="fc" id="L100">                    &quot;email&quot;, &quot;error.user&quot;, e.getMessage()</span>
+            );
+<span class="fc" id="L102">            model.addAttribute(&quot;user&quot;, userCreateDTO);</span>
+<span class="fc" id="L103">            return &quot;signup-form&quot;;</span>
+<span class="fc" id="L104">        }</span>
+
+<span class="fc" id="L106">        redirectAttributes.addFlashAttribute(&quot;successMessage&quot;, &quot;Inscription réussie ! Vous pouvez vous connecter.&quot;);</span>
+<span class="fc" id="L107">        return &quot;redirect:/login&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

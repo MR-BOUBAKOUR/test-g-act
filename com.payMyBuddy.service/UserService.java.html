@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">demo</a> &gt; <a href="index.source.html" class="el_package">com.payMyBuddy.service</a> &gt; <span class="el_source">UserService.java</span></div><h1>UserService.java</h1><pre class="source lang-java linenums">package com.payMyBuddy.service;
+
+import com.payMyBuddy.dto.account.AccountCreateDTO;
+import com.payMyBuddy.dto.user.ContactCreateDTO;
+import com.payMyBuddy.dto.user.UserCreateDTO;
+import com.payMyBuddy.dto.user.UserPasswordUpdateDTO;
+import com.payMyBuddy.dto.user.UserResponseDTO;
+import com.payMyBuddy.exception.EmailAlreadyExistException;
+import com.payMyBuddy.exception.IncorrectPasswordException;
+import com.payMyBuddy.exception.ResourceNotFoundException;
+import com.payMyBuddy.mapper.UserMapper;
+import com.payMyBuddy.model.User;
+import com.payMyBuddy.repository.UserRepository;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+/**
+ * The type User service.
+ */
+@Service
+@Transactional
+public class UserService {
+
+    private final UserRepository userRepository;
+    private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
+
+    private final AccountService accountService;
+
+    /**
+     * Instantiates a new User service.
+     *
+     * @param userRepository the user repository
+     * @param userMapper     the user mapper
+     * @param accountService the account service
+     */
+    @Autowired
+<span class="fc" id="L42">    public UserService(UserRepository userRepository, UserMapper userMapper, @Lazy AccountService accountService) {</span>
+<span class="fc" id="L43">        this.userRepository = userRepository;</span>
+<span class="fc" id="L44">        this.userMapper = userMapper;</span>
+<span class="fc" id="L45">        this.passwordEncoder = new BCryptPasswordEncoder();</span>
+
+<span class="fc" id="L47">        this.accountService = accountService;</span>
+<span class="fc" id="L48">    }</span>
+
+    /**
+     * Find by user id - internal use.
+     *
+     * @param userId the user id
+     * @return the user
+     */
+    public User findByUserIdInternalUse(Integer userId) {
+<span class="fc" id="L57">        return userRepository.findById(userId)</span>
+<span class="pc" id="L58">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Utilisateur non trouvé.&quot;));</span>
+    }
+
+    /**
+     * Find by user id.
+     *
+     * @param userId the user id
+     * @return the user response dto
+     */
+    public UserResponseDTO findByUserId(Integer userId) {
+<span class="fc" id="L68">        return userRepository.findById(userId)</span>
+<span class="fc" id="L69">            .map(userMapper::toUserResponseDTO)</span>
+<span class="pc" id="L70">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Utilisateur non trouvé.&quot;));</span>
+    }
+
+    /**
+     * Find by user email - internal use.
+     *
+     * @param email the email
+     * @return the user
+     */
+    public User findByUserEmailInternalUse(String email) {
+<span class="fc" id="L80">        return userRepository.findByEmail(email)</span>
+<span class="pc" id="L81">            .orElseThrow(() -&gt; new ResourceNotFoundException(&quot;Utilisateur non trouvé.&quot;));</span>
+    }
+
+    /**
+     * Check if Exists by email.
+     *
+     * @param email the email
+     * @return the boolean
+     */
+    public boolean existsByEmail(String email) {
+<span class="fc" id="L91">        return userRepository.existsByEmail(email);</span>
+    }
+
+    /**
+     * Create user.
+     *
+     * @param newUser the new user
+     */
+    public void createUser(UserCreateDTO newUser) {
+
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        if (existsByEmail(newUser.getEmail())) {</span>
+<span class="fc" id="L102">            throw new EmailAlreadyExistException(&quot;Adresse email déjà utilisée. Veuillez en choisir une autre.&quot;);</span>
+        }
+
+<span class="fc" id="L105">        User user = userMapper.toEntityFromCreateDTO(newUser);</span>
+<span class="fc" id="L106">        user.setPassword(passwordEncoder.encode(user.getPassword()));</span>
+
+<span class="fc" id="L108">        userRepository.save(user);</span>
+
+<span class="fc" id="L110">        accountService.createAccount(</span>
+            new AccountCreateDTO(&quot;Pay My Buddy&quot;),
+<span class="fc" id="L112">            user.getId()</span>
+        );
+<span class="fc" id="L114">    }</span>
+
+    /**
+     * Create contact.
+     *
+     * @param userId           the user id
+     * @param contactCreateDTO the contact create dto
+     */
+    public void createContact(Integer userId, ContactCreateDTO contactCreateDTO) {
+
+<span class="fc" id="L124">        User user = findByUserIdInternalUse(userId);</span>
+<span class="fc" id="L125">        User contact = findByUserEmailInternalUse(contactCreateDTO.getEmail());</span>
+
+        // bidirectional relation
+<span class="fc" id="L128">        user.addContact(contact);</span>
+
+<span class="fc" id="L130">        userRepository.save(user);</span>
+<span class="fc" id="L131">        userRepository.save(contact);</span>
+<span class="fc" id="L132">    }</span>
+
+    /**
+     * Delete contact.
+     *
+     * @param userId    the user id
+     * @param contactId the contact id
+     */
+    public void deleteContact(Integer userId, Integer contactId) {
+
+<span class="fc" id="L142">        User user = findByUserIdInternalUse(userId);</span>
+<span class="fc" id="L143">        User contact = findByUserIdInternalUse(contactId);</span>
+
+        // bidirectional relation
+<span class="fc" id="L146">        user.removeContact(contact);</span>
+
+<span class="fc" id="L148">        userRepository.save(user);</span>
+<span class="fc" id="L149">        userRepository.save(contact);</span>
+<span class="fc" id="L150">    }</span>
+
+    /**
+     * Update password by user id.
+     *
+     * @param userPasswordUpdateDTO the user password update dto
+     * @param userId                the user id
+     */
+    public void updatePasswordByUserId(UserPasswordUpdateDTO userPasswordUpdateDTO, Integer userId) {
+
+<span class="fc" id="L160">        User user = findByUserIdInternalUse(userId);</span>
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (!passwordEncoder.matches(</span>
+<span class="fc" id="L162">            userPasswordUpdateDTO.getActualPassword(),</span>
+<span class="fc" id="L163">            user.getPassword()</span>
+        )) {
+<span class="fc" id="L165">            throw new IncorrectPasswordException(&quot;Le mot de passe actuel est incorrect.&quot;);</span>
+        }
+
+<span class="fc" id="L168">        user.setPassword(passwordEncoder.encode(userPasswordUpdateDTO.getNewPassword()));</span>
+
+<span class="fc" id="L170">        userRepository.save(user);</span>
+<span class="fc" id="L171">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
