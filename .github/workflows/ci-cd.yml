@@ -49,7 +49,7 @@ jobs:
           path: target/site/jacoco/
 
       - name: Deploy JaCoCo report to GitHub Pages
-        uses: peaceiris/actions-dev@v4
+        uses: peaceiris/actions-gh-pages@v4
         with:
           path: target/site/jacoco
         env:
