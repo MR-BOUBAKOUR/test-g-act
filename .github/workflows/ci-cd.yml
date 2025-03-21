@@ -57,6 +57,9 @@ jobs:
           name: javadocs
           path: target/reports/apidocs/
 
+      - name: Move JavaDocs to target/site
+        run: mv target/reports/apidocs target/site/apidocs
+
       - name: Deploying reports to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
