@@ -11,8 +11,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:mysql://db-test:3306/paymybuddy_test?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=root
-      - SPRING_PROFILES_ACTIVE=test
       - DB_HOST=db-test
+      - SPRING_PROFILES_ACTIVE=test
     networks:
       - paymybuddy-test-network
     volumes:
@@ -24,11 +24,11 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=paymybuddy_test
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+      - MYSQL_ROOT_PASSWORD=root
     networks:
       - paymybuddy-test-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 networks:
   paymybuddy-test-network:
