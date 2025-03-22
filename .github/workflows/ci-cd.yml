@@ -11,6 +11,7 @@ env:
   DOCKER_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/paymybuddy
   DOCKER_IMAGE_TAG: ${{ github.sha }}
   MYSQL_DATABASE: paymybuddy_test
+  MYSQL_ROOT_PASSWORD: root
 
 jobs:
   # Construction de l'image Docker et exécution des tests
@@ -42,7 +43,7 @@ jobs:
         run: |
           docker run -d --name mysql-test \
             --network paymybuddy-test-network \
-            -e MYSQL_ROOT_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
             -e MYSQL_DATABASE=${MYSQL_DATABASE} \
             mysql:8.0 \
             --character-set-server=utf8mb4 \
@@ -51,7 +52,7 @@ jobs:
           # Attente que MySQL soit prêt avant de continuer
           echo "Waiting for MySQL to be ready..."
           timeout=60
-          until docker exec mysql-test mysqladmin ping -h localhost -u root -p${{ secrets.DB_PASSWORD }} --silent || [ $timeout -le 0 ]; do
+          until docker exec mysql-test mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD} --silent || [ $timeout -le 0 ]; do
             sleep 1
             ((timeout--))
           done
@@ -75,7 +76,7 @@ jobs:
             --network paymybuddy-test-network \
             -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/${MYSQL_DATABASE} \
             -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
             -v ${{ github.workspace }}/target:/app/target \
             paymybuddy-test:latest \
             mvn test
@@ -87,7 +88,7 @@ jobs:
             --network paymybuddy-test-network \
             -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/${MYSQL_DATABASE} \
             -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
             -v ${{ github.workspace }}/target:/app/target \
             paymybuddy-test:latest \
             mvn failsafe:integration-test
