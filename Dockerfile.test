@@ -1,4 +1,4 @@
-Dockerfile pour tests dans CI/CD
+# Dockerfile pour tests
 
 # Dockerfile.test
 # Image optimisée pour l'exécution des tests dans le pipeline CI/CD
