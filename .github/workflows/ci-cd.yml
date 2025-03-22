@@ -73,10 +73,6 @@ jobs:
       - name: Run Unit Tests
         run: |
           docker run --rm \
-            --network paymybuddy-test-network \
-            -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/${MYSQL_DATABASE} \
-            -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
             -v ${{ github.workspace }}/target:/app/target \
             paymybuddy-test:latest \
             mvn test
