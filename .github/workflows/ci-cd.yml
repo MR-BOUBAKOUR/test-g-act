@@ -9,9 +9,8 @@ on:
 env:
   # Configuration de base
   DOCKER_REPO: ${{ secrets.DOCKERHUB_USERNAME }}/paymybuddy
-  DOCKER_IMAGE_TAG: ${{ github.sha }}
-  MYSQL_DATABASE: paymybuddy_test
-  MYSQL_ROOT_PASSWORD: root
+  MYSQL_DATABASE: ${{ secrets.DB_NAME }}
+  MYSQL_ROOT_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
 jobs:
   # Tests et analyses pour tous les commits
