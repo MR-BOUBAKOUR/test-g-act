@@ -2,7 +2,7 @@ name: PayMyBuddy CI/CD Pipeline
 
 on:
   push:
-    branches: [ dev, main ]
+    branches: [ dev, dev_2, main ]
   pull_request:
     branches: [ main ]
 
@@ -30,56 +30,15 @@ jobs:
       - name: Create Docker network
         run: docker network create paymybuddy-test-network
 
-      # Démarrage d'un conteneur MySQL pour les tests
-      - name: Start MySQL Container
+      # Exécution des tests avec Docker Compose
+      - name: Run Tests with Docker Compose
         run: |
-          docker run -d --name mysql-test \
-            --network paymybuddy-test-network \
-            -e MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-            -e MYSQL_DATABASE=${MYSQL_DATABASE} \
-            mysql:8.0 \
-            --character-set-server=utf8mb4 \
-            --collation-server=utf8mb4_unicode_ci
-          
-          echo "Waiting for MySQL to be ready..."
-          timeout=60
-          until docker exec mysql-test mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD} --silent || [ $timeout -le 0 ]; do
-            sleep 1
-            ((timeout--))
-          done
-
-      # Construction de l'image de test
-      - name: Build test image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./Dockerfile.test
-          push: false
-          load: true
-          tags: paymybuddy-test:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Exécution de tous les tests (unitaires + intégration)
-      - name: Run Tests
-        run: |
-          docker run --rm \
-            --network paymybuddy-test-network \
-            -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/${MYSQL_DATABASE} \
-            -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-            -e DB_HOST=mysql-test \
-            -v ${{ github.workspace }}/target:/app/target \
-            paymybuddy-test:latest \
-            mvn verify
+          docker-compose -f docker-compose.test.yml up --exit-code-from app-test
 
       # Génération des rapports
       - name: Generate Reports
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}/target:/app/target \
-            paymybuddy-test:latest \
-            mvn jacoco:report javadoc:javadoc
+          docker-compose -f docker-compose.test.yml run --rm app-test mvn jacoco:report javadoc:javadoc
 
       # Téléchargement des rapports en tant qu'artefacts
       - name: Upload Reports as Artifacts
@@ -119,7 +78,7 @@ jobs:
     name: Publish & Deploy
     runs-on: ubuntu-latest
     needs: test-and-analyze
-    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: success() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/dev_2')
 
     steps:
       - name: Checkout Code

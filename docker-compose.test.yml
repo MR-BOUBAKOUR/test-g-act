@@ -1,0 +1,36 @@
+services:
+  app-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    volumes:
+      - ./target:/app/target
+    depends_on:
+      - db-test
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-test:3306/paymybuddy_test?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_PROFILES_ACTIVE=test
+      - DB_HOST=db-test
+    networks:
+      - paymybuddy-test-network
+    command: mvn verify
+
+  db-test:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=paymybuddy_test
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - paymybuddy-test-network
+
+networks:
+  paymybuddy-test-network:
+    driver: bridge
