@@ -1,4 +1,4 @@
-name: PayMyBuddy Advanced CI/CD Pipeline
+name: PayMyBuddy CI/CD Pipeline
 
 on:
   push:
@@ -14,9 +14,9 @@ env:
   MYSQL_ROOT_PASSWORD: root
 
 jobs:
-  # Construction de l'image Docker et exécution des tests
-  build-and-test:
-    name: Build & Test in Docker
+  # Tests et analyses pour tous les commits
+  test-and-analyze:
+    name: Test & Analyze
     runs-on: ubuntu-latest
 
     steps:
@@ -26,13 +26,6 @@ jobs:
       # Configuration de Docker Buildx pour des builds multi-architectures
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # Configuration des accès Docker Hub pour les étapes suivantes
-      - name: Login to DockerHub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # Création d'un réseau Docker pour les tests
       - name: Create Docker network
@@ -49,7 +42,6 @@ jobs:
             --character-set-server=utf8mb4 \
             --collation-server=utf8mb4_unicode_ci
           
-          # Attente que MySQL soit prêt avant de continuer
           echo "Waiting for MySQL to be ready..."
           timeout=60
           until docker exec mysql-test mysqladmin ping -h localhost -u root -p${MYSQL_ROOT_PASSWORD} --silent || [ $timeout -le 0 ]; do
@@ -57,20 +49,20 @@ jobs:
             ((timeout--))
           done
 
-      # Construction de l'image de test avec Maven et JDK préinstallés
+      # Construction de l'image de test
       - name: Build test image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile.test  # Dockerfile spécifique pour les tests
+          file: ./Dockerfile.test
           push: false
           load: true
           tags: paymybuddy-test:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Exécution des tests unitaires dans le conteneur
-      - name: Run Unit Tests
+      # Exécution de tous les tests (unitaires + intégration)
+      - name: Run Tests
         run: |
           docker run --rm \
             --network paymybuddy-test-network \
@@ -80,102 +72,61 @@ jobs:
             -e DB_HOST=mysql-test \
             -v ${{ github.workspace }}/target:/app/target \
             paymybuddy-test:latest \
-            mvn test
+            mvn verify
 
-      # Exécution des tests d'intégration dans le conteneur
-      - name: Run Integration Tests
-        run: |
-          docker run --rm \
-            --network paymybuddy-test-network \
-            -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/${MYSQL_DATABASE} \
-            -e SPRING_DATASOURCE_USERNAME=root \
-            -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-            -e DB_HOST=mysql-test \
-            -v ${{ github.workspace }}/target:/app/target \
-            paymybuddy-test:latest \
-            mvn failsafe:integration-test
-
-      # Génération des rapports de couverture JaCoCo
-      - name: Generate JaCoCo Coverage Report
+      # Génération des rapports
+      - name: Generate Reports
         run: |
           docker run --rm \
             -v ${{ github.workspace }}/target:/app/target \
             paymybuddy-test:latest \
-            mvn jacoco:report
-
-      # Génération de la documentation JavaDoc
-      - name: Generate JavaDocs
-        run: |
-          docker run --rm \
-            -v ${{ github.workspace }}/target:/app/target \
-            paymybuddy-test:latest \
-            mvn javadoc:javadoc
-
-      # Déplacement des JavaDocs vers le répertoire site
-      - name: Move JavaDocs to target/site
-        run: |
-          mkdir -p target/site
-          mv target/reports/apidocs target/site/apidocs || true
+            mvn jacoco:report javadoc:javadoc
 
       # Téléchargement des rapports en tant qu'artefacts
-      - name: Upload JaCoCo Coverage Report
+      - name: Upload Reports as Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco-report
-          path: target/site/jacoco/
-
-      - name: Upload JavaDocs
-        uses: actions/upload-artifact@v4
-        with:
-          name: javadocs
-          path: target/site/apidocs/
-
-  # Analyse de sécurité de l'image Docker
-  security-scan:
-    name: Docker Image Security Scan
-    runs-on: ubuntu-latest
-    needs: build-and-test
-
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+          name: code-reports
+          path: |
+            target/site/jacoco/
+            target/reports/apidocs/
 
       # Construction de l'image de production pour le scan
-      - name: Build Production Image
+      - name: Build Production Image for Scan
         uses: docker/build-push-action@v6
         with:
           context: .
           push: false
           load: true
-          tags: ${{ env.DOCKER_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+          tags: paymybuddy-test-security:latest
 
-      # Scan de l'image Docker avec Trivy pour détecter les vulnérabilités
-      - name: Run Trivy vulnerability scanner
+      # Scan de sécurité
+      - name: Run Security Scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.DOCKER_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+          image-ref: paymybuddy-test-security:latest
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
 
-      # Publication des résultats de sécurité dans GitHub Security
-      - name: Upload Trivy scan results to GitHub Security tab
+      # Publication des résultats de sécurité
+      - name: Upload Security Results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
-  # Publication de l'image Docker et déploiement des rapports
+  # Publication de l'image et déploiement des rapports (uniquement pour main)
   publish-and-deploy:
     name: Publish & Deploy
     runs-on: ubuntu-latest
-    needs: [build-and-test, security-scan]
-    if: success() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    needs: test-and-analyze
+    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Configuration de Docker Buildx
+      # Configuration de Docker
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -186,29 +137,33 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Détermination du tag de l'image en fonction de la branche
-      - name: Set Image Tag
-        id: set-tag
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "TAG=latest" >> $GITHUB_OUTPUT
-          else
-            echo "TAG=dev" >> $GITHUB_OUTPUT
-          fi
-
       # Construction et publication de l'image vers Docker Hub
-      # Construction multi-architecture pour compatibilité x86_64 et ARM64
       - name: Build and Push Production Image
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.DOCKER_REPO }}:${{ steps.set-tag.outputs.TAG }}
-            ${{ env.DOCKER_REPO }}:${{ env.DOCKER_IMAGE_TAG }}
+            ${{ env.DOCKER_REPO }}:latest
+            ${{ env.DOCKER_REPO }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      # Téléchargement des rapports depuis le job precedent
+      - name: Download Code Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: code-reports
+          path: downloaded-reports
+
+      # Mise en place des rapports dans le dossier target/site
+      - name: Prepare site directory
+        run: |
+          mkdir -p ./target/site/jacoco
+          mkdir -p ./target/site/apidocs
+          cp -r downloaded-reports/target/site/jacoco/* ./target/site/jacoco/ || true
+          cp -r downloaded-reports/target/reports/apidocs/* ./target/site/apidocs/ || true
 
       # Déploiement des rapports vers GitHub Pages
       - name: Deploy reports to GitHub Pages
