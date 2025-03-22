@@ -162,8 +162,8 @@ jobs:
         run: |
           mkdir -p ./target/site/jacoco
           mkdir -p ./target/site/apidocs
-          cp -r downloaded-reports/target/site/jacoco/* ./target/site/jacoco/ || true
-          cp -r downloaded-reports/target/reports/apidocs/* ./target/site/apidocs/ || true
+          cp -r downloaded-reports/site/jacoco/* ./target/site/jacoco/ || true
+          cp -r downloaded-reports/reports/apidocs/* ./target/site/apidocs/ || true
 
       # Déploiement des rapports vers GitHub Pages
       - name: Deploy reports to GitHub Pages
