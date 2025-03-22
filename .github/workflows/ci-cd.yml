@@ -77,7 +77,6 @@ jobs:
             -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql-test:3306/${MYSQL_DATABASE} \
             -e SPRING_DATASOURCE_USERNAME=root \
             -e SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD} \
-            -e DB_HOST=mysql-test
             -v ${{ github.workspace }}/target:/app/target \
             paymybuddy-test:latest \
             mvn test
