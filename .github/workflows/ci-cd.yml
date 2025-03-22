@@ -117,6 +117,19 @@ jobs:
           mkdir -p target/site
           mv target/reports/apidocs target/site/apidocs || true
 
+      # Téléchargement des rapports en tant qu'artefacts
+      - name: Upload JaCoCo Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+
+      - name: Upload JavaDocs
+        uses: actions/upload-artifact@v4
+        with:
+          name: javadocs
+          path: target/site/apidocs/
+
   # Analyse de sécurité de l'image Docker
   security-scan:
     name: Docker Image Security Scan
@@ -147,7 +160,7 @@ jobs:
 
       # Publication des résultats de sécurité dans GitHub Security
       - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
 
@@ -197,32 +210,9 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Téléchargement des rapports générés précédemment
-      - name: Download reports
-        uses: actions/download-artifact@v4
-        with:
-          name: jacoco-report
-          path: ./target/site/jacoco
-
-      - name: Download JavaDocs
-        uses: actions/download-artifact@v4
-        with:
-          name: javadocs
-          path: ./target/site/apidocs
-
       # Déploiement des rapports vers GitHub Pages
       - name: Deploy reports to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./target/site
-
-      # Notification de succès du déploiement (exemple Slack)
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        if: always()

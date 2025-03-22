@@ -1,11 +1,9 @@
-# Dockerfile pour tests
-
 # Dockerfile.test
 # Image optimisée pour l'exécution des tests dans le pipeline CI/CD
 
 FROM eclipse-temurin:21-jdk
 
-# Installation des outils nécessaires
+# Installation de Maven
 RUN apt-get update && \
     apt-get install -y maven git curl && \
     apt-get clean && \
@@ -17,10 +15,6 @@ COPY .mvn /root/.m2
 
 WORKDIR /app
 
-# Copie du fichier POM pour précharger les dépendances
+# Copie du fichier POM pour télécharger les dépendances
 COPY pom.xml .
-# Préchargement des dépendances Maven pour accélérer les builds futurs
-RUN mvn dependency:go-offline -B
-
-# Copie du code source
 COPY src ./src
