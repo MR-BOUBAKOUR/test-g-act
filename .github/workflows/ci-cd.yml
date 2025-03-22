@@ -120,7 +120,7 @@ jobs:
     name: Publish & Deploy
     runs-on: ubuntu-latest
     needs: test-and-analyze
-    if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: success() && github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
 
     steps:
       - name: Checkout Code
