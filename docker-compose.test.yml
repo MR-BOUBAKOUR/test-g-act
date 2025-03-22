@@ -3,8 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.test
-    volumes:
-      - ./target:/app/target
     depends_on:
       - db-test
     environment:
@@ -15,6 +13,8 @@ services:
       - DB_HOST=db-test
     networks:
       - paymybuddy-test-network
+    volumes:
+      - ./target:/app/target
     command: mvn verify
 
   db-test:
