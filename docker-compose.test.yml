@@ -6,11 +6,12 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      - db-test
+      db-test:
+        condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db-test:3306/paymybuddy_test
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-test:3306/${DB_TEST_NAME}
+      - SPRING_DATASOURCE_USERNAME=${DB_TEST_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_TEST_PASSWORD}
       - SPRING_PROFILES_ACTIVE=test
     networks:
       - paymybuddy-test-network
@@ -23,10 +24,15 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_DATABASE=paymybuddy_test
-      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=${DB_TEST_NAME}
+      - MYSQL_ROOT_PASSWORD=${DB_TEST_PASSWORD}
     networks:
       - paymybuddy-test-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_TEST_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
 networks:
