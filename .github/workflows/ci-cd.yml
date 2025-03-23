@@ -39,7 +39,7 @@ jobs:
       - name: Create Docker network
         run: docker network create paymybuddy-test-network
 
-      # Création du fichier .env
+      # Création du fichier .env pour les secrets
       - name: Create .env file
         run: |
           echo "DB_TEST_URL=${DB_TEST_URL}" >> .env
