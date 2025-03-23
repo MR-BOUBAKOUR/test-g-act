@@ -8,9 +8,9 @@ services:
     depends_on:
       - db-test
     environment:
-      - SPRING_DATASOURCE_URL=${DB_TEST_URL}
-      - SPRING_DATASOURCE_USERNAME=${DB_TEST_USER}
-      - SPRING_DATASOURCE_PASSWORD=${DB_TEST_PASSWORD}
+      - SPRING_DATASOURCE_URL=jdbc:mysql://db-test:3306/paymybuddy_test
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root
       - SPRING_PROFILES_ACTIVE=test
     networks:
       - paymybuddy-test-network
@@ -23,8 +23,8 @@ services:
     ports:
       - "3306:3306"
     environment:
-      - MYSQL_DATABASE=${DB_TEST_NAME}
-      - MYSQL_ROOT_PASSWORD=${DB_TEST_PASSWORD}
+      - MYSQL_DATABASE=paymybuddy_test
+      - MYSQL_ROOT_PASSWORD=root
     networks:
       - paymybuddy-test-network
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
