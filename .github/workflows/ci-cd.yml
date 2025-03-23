@@ -47,15 +47,6 @@ jobs:
           echo "DB_TEST_PASSWORD=${DB_TEST_PASSWORD}" >> .env
           echo "DB_TEST_NAME=${DB_TEST_NAME}" >> .env
 
-      # CHECK
-      - name: Debug Environment
-        run: |
-          echo "Testing DB connection variables:"
-          echo "DB_TEST_NAME=${DB_TEST_NAME}"
-          echo "DB URL format: $(echo ${DB_TEST_URL} | sed 's/:[^:]*@/:*****@/')"
-          cat application-test.properties || echo "File not found"
-          docker network ls
-
       # Exécution des tests
       - name: Run Tests
         run: |
